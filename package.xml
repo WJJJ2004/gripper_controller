@@ -1,0 +1,37 @@
+<?xml version="1.0"?>
+<package format="3">
+  <name>gripper_controller</name>
+  <version>0.1.0</version>
+  <description>ROS2 Gripper controller node for SRCIRC 2025</description>
+
+  <maintainer email="dldnjswns7412@gmail.com">WJ</maintainer>
+  <license>MIT</license>
+
+  <buildtool_depend>ament_cmake</buildtool_depend>
+
+  <depend>rclcpp</depend>
+  <depend>std_msgs</depend>
+  <depend>geometry_msgs</depend>
+  <depend>sensor_msgs</depend>
+  <depend>visualization_msgs</depend>
+  <depend>tf2</depend>
+  <depend>tf2_ros</depend>
+  <depend>tf2_geometry_msgs</depend>
+
+  <build_depend>intelligent_humanoid_interfaces</build_depend>
+  <build_depend>dynamixel_rdk_msgs</build_depend>
+  <build_depend>yaml-cpp</build_depend>
+
+  <exec_depend>yaml-cpp</exec_depend>
+  <exec_depend>pinocchio</exec_depend>
+  <exec_depend>eigen</exec_depend>
+  <exec_depend>intelligent_humanoid_interfaces</exec_depend>
+  <exec_depend>dynamixel_rdk_msgs</exec_depend>
+
+  <build_export_depend>ament_cmake</build_export_depend>
+
+  <export>
+    <build_type>ament_cmake</build_type>
+  </export>
+</package>
+

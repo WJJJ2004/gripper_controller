@@ -24,7 +24,7 @@
 #include <iostream>
 #include <fstream>
 
-namespace MOTION_EDITOR
+namespace SRCIRC2025_HUMANOID_LOCOMOTION
 {
 struct DxlValue {
   int id{};
@@ -102,4 +102,4 @@ private:
                                             const std::vector<Frame>& frames);
 };
 
-} // namespace MOTION_EDITOR
+} // namespace SRCIRC2025_HUMANOID_LOCOMOTION

@@ -12,6 +12,7 @@
 #include <tf2_ros/transform_listener.h>
 #include <tf2_ros/buffer.h>
 #include <tf2_geometry_msgs/tf2_geometry_msgs.hpp>
+#include <ament_index_cpp/get_package_share_directory.hpp>
 
 // custom interfaces messages
 #include "intelligent_humanoid_interfaces/msg/vision2_master_msg.hpp"
@@ -32,6 +33,9 @@ public:
   Eigen::VectorXd q_current_;
 
 private:
+  std::string share_dir = ament_index_cpp::get_package_share_directory("gripper_controller");
+  std::string yaml_path = share_dir + "/motion/grip.yaml";
+
   double waypoint_d = 0.035;
   ControlMode mode_;
 
@@ -69,7 +73,7 @@ private:
   void target_cmd_callback(const geometry_msgs::msg::Point::SharedPtr msg);
   void getParamsFromRos();
 
-  std::shared_ptr<MOTION_EDITOR::MotionEditor> me_;
+  std::shared_ptr<MotionEditor> motion_editor_;
   std::shared_ptr<IKModule> ik_;
   IKModule::Params params_;
 };

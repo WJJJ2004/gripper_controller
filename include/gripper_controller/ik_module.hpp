@@ -86,7 +86,6 @@ private:
   // 내부 헬퍼
   void clampToLimits(Eigen::VectorXd& q) const;
   void clampStep(Eigen::VectorXd& dq) const;
-  // bool hasJointLimits() const;
 
 private:
   // 모델/데이터

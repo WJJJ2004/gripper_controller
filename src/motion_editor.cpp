@@ -14,14 +14,16 @@
 
 #include "gripper_controller/motion_editor.hpp"
 
-namespace MOTION_EDITOR
+namespace SRCIRC2025_HUMANOID_LOCOMOTION
 {
 
 MotionEditor::MotionEditor()
 {
   joint_to_id_ = {
     {"rotate_torso", 22},
+    {"rotate_0",      0},
     {"rotate_1",      1},
+    {"rotate_2",      2},
     {"rotate_3",      3},
     {"rotate_5",      5},
   };
@@ -101,7 +103,9 @@ void MotionEditor::editFourArmJoints(const std::string& step_name,
     if (it != joint_positions_rad.end()) sub[j] = it->second;
   };
   put("rotate_torso");
+  put("rotate_0");
   put("rotate_1");
+  put("rotate_2");
   put("rotate_3");
   put("rotate_5");
 
@@ -227,5 +231,5 @@ YAML::Node MotionEditor::buildYamlFromAll(const std::vector<MetaBlob>& metas,
   return out;
 }
 
-} // namespace MOTION_EDITOR
-
+}
+// namespace SRCIRC2025_HUMANOID_LOCOMOTION

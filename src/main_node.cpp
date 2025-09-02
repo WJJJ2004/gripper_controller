@@ -1,34 +1,34 @@
 // ********************* 참고: Vision2MasterMsg *********************
 
-    // float64 ball_dist
-    // float64 ball_cam_x
-    // float64 ball_cam_y
-    // float64 ball_cam_z
+  // float64 ball_dist
+  // float64 ball_cam_x
+  // float64 ball_cam_y
+  // float64 ball_cam_z
 
-    // float64 goal_dist
-    // float64 goal_cam_x
-    // float64 goal_cam_y
+  // float64 goal_dist
+  // float64 goal_cam_x
+  // float64 goal_cam_y
 
-    // float64 hurdle_dist
-    // int64 hurdle_cam_x
-    // int64 hurdle_cam_y
+  // float64 hurdle_dist
+  // int64 hurdle_cam_x
+  // int64 hurdle_cam_y
 
-    // int64 line_delta
-    // int64 line_cam_x
-    // int64 line_cam_y
+  // int64 line_delta
+  // int64 line_cam_x
+  // int64 line_cam_y
 
 // ********************* 참고: DynamixelMsgs *********************
 
-    // ########################################
-    // # Messages
-    // ########################################
-    // ## Dynamixel Control Message
-    // ########################################
+  // ########################################
+  // # Messages
+  // ########################################
+  // ## Dynamixel Control Message
+  // ########################################
 
-    // std_msgs/Header header
-    // float32 goal_position           # radian
-    // float32 profile_acceleration    # radian/s^2
-    // float32 profile_velocity        # radian/s
+  // std_msgs/Header header
+  // float32 goal_position           # radian
+  // float32 profile_acceleration    # radian/s^2
+  // float32 profile_velocity        # radian/s
 
 // ***************************************************************
 
@@ -36,16 +36,25 @@
 #include <iostream>
 
 using std::placeholders::_1;
-
 namespace SRCIRC2025_HUMANOID_LOCOMOTION
 {
 GripperMainNode::GripperMainNode(const std::string& urdf_path, const std::string& srdf_path, const std::string& AUTO_CTRL)
 : Node("gripper_main_node")
 {
-  // TF INITIALIZE 
+  // CONTROL MODE SET
+  mode_ = (AUTO_CTRL == "auto") ? ControlMode::Auto : ControlMode::Teleop;
+
+  // MOTION EDITOR INITIALIZE
+  try {
+    motion_editor_ = std::make_shared<MotionEditor>();
+    motion_editor_->loadFromFile(yaml_path);
+  } catch (const std::exception& e) {
+    std::cerr << "ERR: " << e.what() << "\n";
+  }
+
+  // TF INITIALIZE
   tf_buffer_   = std::make_unique<tf2_ros::Buffer>(this->get_clock());
   tf_listener_ = std::make_shared<tf2_ros::TransformListener>(*tf_buffer_, /*spin_thread=*/true);
-
 
   // ROS PARAMETER
   this->declare_parameter<int>("MAX_ITERATIONS", 200);
@@ -68,12 +77,10 @@ GripperMainNode::GripperMainNode(const std::string& urdf_path, const std::string
   this->declare_parameter<bool>("DEBUG_TF", false);
   this->declare_parameter<double>("WAYPOINT_D", 0.035);
 
+  // IK MODULE INITIALIZE
   ik_ = std::make_shared<IKModule>(urdf_path, srdf_path, "base_link", "ee_link_1");
-  this->getParamsFromRos();                       // ROS 파라미터에서 IK 파라미터 로드
-  q_current_ = ik_->initialConfiguration();       // 시드
-
-  me_ = std::make_shared<MOTION_EDITOR::MotionEditor>();
-  mode_ = (AUTO_CTRL == "auto") ? ControlMode::Auto : ControlMode::Teleop;
+  this->getParamsFromRos();               // 파라미터 로드   >> 위치 수정 X
+  q_current_ = ik_->initialConfiguration();       // 시드 자세
 
   pub_joints_     = create_publisher<sensor_msgs::msg::JointState>(
     "/joint_states", 10);             // RVIZ2
@@ -82,9 +89,9 @@ GripperMainNode::GripperMainNode(const std::string& urdf_path, const std::string
   pub_ee_current_ = create_publisher<geometry_msgs::msg::Point>(
     "/ee_current_position", 10);      // 타이머 콜백 바인딩 현재 EE 위치 퍼블리시 (FOR RVIZ2 TEST)
   pub_ctrl_flg_   = create_publisher<std_msgs::msg::Bool>(
-  "/mani2master", 10);              // CONTROL FLAG
+    "/mani2master", 10);              // CONTROL FLAG
 
-  if (mode_ == ControlMode::Auto) // Auto 모드 >> gripper.launch.py
+  if (mode_ == ControlMode::Auto)
   {
     RCLCPP_INFO(get_logger(), "Auto control mode: transforming /ee_target_position from camera frame to base_link frame.");
     sub_master_request_ = create_subscription<geometry_msgs::msg::Point32>(
@@ -217,30 +224,23 @@ bool GripperMainNode::transformPointToBase(const geometry_msgs::msg::PointStampe
 
   geometry_msgs::msg::TransformStamped T_base_eye;
   try {
-    // 주: Humble의 WARN_THROTTLE는 보통 Clock& 를 받습니다.
     auto clk = this->get_clock();
-    if (!clk) 
+    if (!clk)
     {
       RCLCPP_WARN(get_logger(), "transformPointToBase: clock is null, skipping throttle");
     }
 
     if (!tf_buffer_->canTransform(base_frame_, in_eye.header.frame_id, query_time, tf2::durationFromSec(tf_timeout_sec_)))
     {
-      if (clk)
-        RCLCPP_WARN_THROTTLE(get_logger(), *clk, 2000,
-                             "Waiting TF %s -> %s (t=%.3f)",
-                             base_frame_.c_str(), in_eye.header.frame_id.c_str(),
-                             query_time.seconds());
-      else
-        RCLCPP_WARN(get_logger(),
-                    "Waiting TF %s -> %s (t=%.3f)",
-                    base_frame_.c_str(), in_eye.header.frame_id.c_str(),
-                    query_time.seconds());
+     RCLCPP_WARN(get_logger(),
+                 "Waiting TF %s -> %s (t=%.3f)",
+                 base_frame_.c_str(), in_eye.header.frame_id.c_str(),
+                 query_time.seconds());
       return false;
     }
 
     T_base_eye = tf_buffer_->lookupTransform(base_frame_, in_eye.header.frame_id, query_time);
-  } 
+  }
   catch (const tf2::TransformException& ex) {
     RCLCPP_WARN(get_logger(), "TF lookup failed: %s", ex.what());
     return false;
@@ -248,7 +248,7 @@ bool GripperMainNode::transformPointToBase(const geometry_msgs::msg::PointStampe
 
   try {
     tf2::doTransform(in_eye, out_base, T_base_eye);
-  } 
+  }
   catch (const std::exception& e) {
     RCLCPP_ERROR(get_logger(), "doTransform failed: %s", e.what());
     return false;
@@ -256,7 +256,6 @@ bool GripperMainNode::transformPointToBase(const geometry_msgs::msg::PointStampe
 
   return true;
 }
-
 
 // ===================== computeIKSE3 기반 target_cmd_callback =====================
 void GripperMainNode::target_cmd_callback(const geometry_msgs::msg::Point::SharedPtr msg)
@@ -280,7 +279,6 @@ void GripperMainNode::target_cmd_callback(const geometry_msgs::msg::Point::Share
 
   if (!ok)
   {
-    // 실패 시 안전 시드로 롤백(초기자세 or 마지막 유효자세 유지)
     RCLCPP_WARN(get_logger(), "[IK] IK failed. target=(%.3f, %.3f, %.3f)", msg->x, msg->y, msg->z);
     return;
   }

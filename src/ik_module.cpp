@@ -227,7 +227,6 @@ bool IKModule::computeIKPrioritySE3(const pinocchio::SE3& target_se3,
     const Eigen::MatrixXd J = S * J6;    // (6×nv)
     const Eigen::Matrix<double,6,1> y = S * e6; // (6×1)
 
-    // === DLS: dq = J^T (J J^T + λ^2 I)^{-1} y ===
     Eigen::MatrixXd I6 = Eigen::MatrixXd::Identity(J.rows(), J.rows());
     Eigen::MatrixXd J_pinv = J.transpose() * (J * J.transpose() + lambda*lambda * I6).inverse();
     Eigen::VectorXd dq = alpha * (J_pinv * y);
@@ -239,9 +238,6 @@ bool IKModule::computeIKPrioritySE3(const pinocchio::SE3& target_se3,
     solution += dq;
     clampToLimits(solution);
 
-    // 수렴 판정
-    //  - 위치: e_p
-    //  - 회전: tilt-only면 yaw 성분이 0이므로 roll/pitch 성분만 남은 ‖S*e6_tail‖ 사용
     const double pos_err = e_p.norm();
     const double ori_err = (S * e6).tail<3>().norm();
 
@@ -302,11 +298,6 @@ void IKModule::clampStep(Eigen::VectorXd& dq) const
     if (dq[i] < -params_.step_max) dq[i] = -params_.step_max;
   }
 }
-
-// bool IKModule::hasJointLimits() const
-// {
-//   return (model_.lowerPositionLimit.size() == model_.nq) && (model_.upperPositionLimit.size() == model_.nq);
-// }
 
 void IKModule::clampToLimits(Eigen::VectorXd& q) const
 {

@@ -83,6 +83,9 @@ install(TARGETS gripper_main_node
 install(DIRECTORY include/
   DESTINATION include/
 )
+install(DIRECTORY motion/
+  DESTINATION share/${PROJECT_NAME}/motion
+)
 install(DIRECTORY launch/
   DESTINATION share/${PROJECT_NAME}/launch
 )
